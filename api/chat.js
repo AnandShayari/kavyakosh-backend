@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 
 export const config = {
+  runtime: "nodejs",
   api: {
     bodyParser: true,
   },
@@ -12,33 +13,33 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { message } = req.body;
+    const { message } = req.body || {};
 
     if (!message) {
       return res.status(400).json({ error: "Message is required" });
     }
 
     if (!process.env.OPENAI_API_KEY) {
-      return res.status(500).json({ error: "OpenAI API key not set" });
+      return res.status(500).json({ error: "API key missing" });
     }
 
     const client = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    const completion = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: message }],
+    const response = await client.responses.create({
+      model: "gpt-4.1-mini",
+      input: message,
     });
 
     return res.status(200).json({
-      reply: completion.choices[0].message.content,
+      reply: response.output_text,
     });
 
   } catch (error) {
-    console.error("Chat API error:", error);
+    console.error("OPENAI CRASH:", error);
     return res.status(500).json({
-      error: "Internal Server Error",
+      error: "OpenAI request failed",
       details: error.message,
     });
   }
