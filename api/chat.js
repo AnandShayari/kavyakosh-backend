@@ -1,18 +1,44 @@
+import OpenAI from "openai";
+
+export const config = {
+  runtime: "nodejs"
+};
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Only POST allowed" });
   }
 
   try {
-    return res.status(200).json({
-      ok: true,
-      received: req.body,
-      message: "Backend is working perfectly"
+    const body = req.body || {};
+    const message = body.message;
+
+    if (!message) {
+      return res.status(400).json({ error: "Message is required" });
+    }
+
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ error: "API key missing" });
+    }
+
+    const client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
     });
-  } catch (err) {
+
+    const response = await client.responses.create({
+      model: "gpt-4.1-mini",
+      input: message,
+    });
+
+    return res.status(200).json({
+      reply: response.output_text || "No reply"
+    });
+
+  } catch (error) {
+    console.error("OPENAI ERROR:", error);
     return res.status(500).json({
-      error: "Server crash",
-      details: err.message
+      error: "OpenAI failed",
+      details: error.message
     });
   }
 }
