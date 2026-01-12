@@ -12,14 +12,30 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Message is required" });
     }
 
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ error: "OpenAI API key not set" });
+    }
+
     const client = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    const response = await client.chat.completions.create({
+    const completion = await client.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: [{ role: "user", content: message }],
+      messages: [
+        { role: "user", content: message }
+      ],
     });
 
-    res.status(200).json({
-      reply: response
+    return res.status(200).json({
+      reply: completion.choices[0].message.content,
+    });
+
+  } catch (error) {
+    console.error("Chat API error:", error);
+    return res.status(500).json({
+      error: "Internal Server Error",
+      details: error.message,
+    });
+  }
+}
